@@ -25,7 +25,7 @@ int main()
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(6001);
+    serv_addr.sin_port = htons(6004);
 
     bind(server_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     listen(server_fd, 10);
@@ -156,7 +156,7 @@ void handle_login_register(int data_sock_fd, chatroom_packet *packet)
         printf("File not exist\n");
         exit(0);
     }
-    if (lseek(fd, -1, SEEK_END) == 0)
+    if (lseek(fd, 0, SEEK_END) == 0)
     {
         printf("DEBUG: Database file is empty\n");
         if (packet->type == REGISTER) // Signup
@@ -172,8 +172,8 @@ void handle_login_register(int data_sock_fd, chatroom_packet *packet)
         }
         else if (packet->type == LOGIN) // Login
         {
-            strcpy(packet->error_packet.error_message, "login_failed");
-            printf("[INFO] User %s login FAILED\n", packet->user.username);
+            strcpy(packet->error_packet.error_message, "Username does not exist");
+            printf("[INFO] User %s login FAILED (username does not exist)\n", packet->user.username);
             send(data_sock_fd, (void *)packet, sizeof(*packet), 0);
         }
     }

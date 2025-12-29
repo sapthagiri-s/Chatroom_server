@@ -9,23 +9,34 @@ typedef struct
 
 client_t clients[MAX_CLIENTS];
 int client_count = 0;
-
+chatroom_packet packet;
+int server_fd, client_fd;
 pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
-void *client_handler(void *arg);
-void broadcast_group_message(chatroom_packet *packet, int sender_fd);
-void add_client(int sockfd, char *username);
-void remove_client(int sockfd);
+
+void handle_sigint(int sig)
+{
+    printf("\n[INFO] Removing client and exiting...\n");
+    packet.type = LOGOUT; // Set the packet type to LOGOUT
+    for (int i = 0; i < client_count; i++)
+    {
+        send(clients[i].sockfd, &packet, sizeof(packet), 0);
+    }
+    sleep(1); // Or use a proper ack-based exit if you have time
+    close(server_fd);
+    printf("[INFO] Server shutting down. Bye 👋\n");
+    exit(0);
+}
 int main()
 {
-    int server_fd, client_fd;
+
     struct sockaddr_in serv_addr;
     pthread_t tid;
-
+    signal(SIGINT, handle_sigint);
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(6004);
+    serv_addr.sin_port = htons(6007);
 
     bind(server_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     listen(server_fd, 10);
@@ -45,7 +56,6 @@ int main()
 void *client_handler(void *arg)
 {
     int client_fd = *(int *)arg;
-    chatroom_packet packet;
 
     while (1)
     {
